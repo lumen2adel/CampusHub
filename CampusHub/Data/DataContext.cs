@@ -1,6 +1,7 @@
 ﻿using CampusHub.Classes.UserAccount;
 using CampusHub.Classes;
 using Microsoft.EntityFrameworkCore;
+using CampusHub.Classes.Group_Posts;
 
 namespace CampusHub.Data
 {
@@ -17,7 +18,23 @@ namespace CampusHub.Data
         public DbSet<GroupMember> GroupMembers { get; set; }
         public DbSet<GroupMessage> GroupMessages { get; set; }
         public DbSet<Notification> Notifications { get; set; }
-
+        public DbSet<Group> Groups { get; set; }
+        public DbSet<GroupMemberPage> GroupMemberPages { get; set; }
+        public DbSet<Post> Posts { get; set; }
+        public DbSet<PostLike> PostLikes { get; set; }
+        public DbSet<PostComment> PostComments { get; set; }
+        public DbSet<PostShare> PostShares { get; set; }
+        public DbSet<PostReport> PostReports { get; set; }
+        public DbSet<Notification_Posts_Groups> Notification_Posts_Groups { get; set; }
+        public DbSet<GroupJoinRequest> GroupJoinRequests { get; set; }
+        public DbSet<UserSeenPost> UserSeenPosts { get; set; }
+        public DbSet<ReportPost> ReportPosts { get; set; }
+        public DbSet<Event> Events { get; set; }
+        public DbSet<EventParticipant> EventParticipants { get; set; }
+        public DbSet<Poll> Polls { get; set; }
+        public DbSet<PollOption> PollOptions { get; set; }
+        public DbSet<PollVote> PollVotes { get; set; }
+        public DbSet<GroupAnnouncement> GroupAnnouncements { get; set; }
 
     }
 }
