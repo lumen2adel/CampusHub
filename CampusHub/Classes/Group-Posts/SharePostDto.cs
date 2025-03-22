@@ -3,6 +3,6 @@
     public class SharePostDto
     {
         public Guid PostId { get; set; }
-        public string? SharedToGroupId { get; set; } // If null, share to personal feed
+        public Guid? SharedToGroupId { get; set; } // If null, share to personal feed
     }
 }

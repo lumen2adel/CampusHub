@@ -2,6 +2,7 @@
 using CampusHub.Classes.Group_Posts;
 using CampusHub.Data;
 using CampusHub.Enums;
+using CampusHub.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,14 +18,18 @@ namespace CampusHub.Controllers
     public class GroupController : ControllerBase
     {
         private readonly DataContext _dbContext;
+        private readonly TrendingPostsService _trendingPostsService;
+        private readonly SearchService _searchService;
 
-        public GroupController(DataContext dbContext)
+        public GroupController(DataContext dbContext, TrendingPostsService trendingPostsService, SearchService searchService)
         {
+            _trendingPostsService = trendingPostsService;
             _dbContext = dbContext;
+            _searchService = searchService;
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateGroup([FromBody] Classes.Group_Posts.CreateGroupDto groupDto)
+        public async Task<IActionResult> CreateGroup([FromBody] CreateGroupDto2 groupDto)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
@@ -112,27 +117,27 @@ namespace CampusHub.Controllers
                 .Select(sp => sp.PostId)
                 .ToListAsync();
 
-            // ✅ Step 3: Fetch Friend Posts (Last 24 Hours, Unseen Posts)
+            // ✅ Step 3: Fetch Friend Posts (Last 24 Hours)
             var friendPosts = await _dbContext.Posts
-                .Where(p => friendIds.Contains(Guid.Parse(p.UserId)) && p.CreatedAt >= DateTime.UtcNow.AddHours(-24))
+                .Where(p => friendIds.Contains(p.UserId) && p.CreatedAt >= DateTime.UtcNow.AddHours(-24))
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
-            // ✅ Step 4: Fetch Trending Posts (Last 7 Days, Sorted by Engagement Score)
+            // ✅ Step 4: Fetch Trending Posts (Last 7 Days)
             var trendingPosts = await _dbContext.Posts
                 .Where(p => p.CreatedAt >= DateTime.UtcNow.AddDays(-7))
-                .OrderByDescending(p => (p.LikeCount * 2) + (p.CommentCount * 3) + (p.ShareCount * 5)) // Weighted formula
+                .OrderByDescending(p => (p.LikeCount * 2) + (p.CommentCount * 3) + (p.ShareCount * 5))
                 .Take(10)
                 .ToListAsync();
 
-            // ✅ Step 5: Fetch Newest Posts (Last 24 Hours, Excluding Seen)
+            // ✅ Step 5: Fetch Newest Posts (Last 24 Hours)
             var newestPosts = await _dbContext.Posts
                 .Where(p => p.CreatedAt >= DateTime.UtcNow.AddHours(-24) && !seenPostIds.Contains(p.Id))
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(10)
                 .ToListAsync();
 
-            // ✅ Step 6: Interleave Posts (2 Trending → 1 Newest → Repeat)
+            // ✅ Step 6: Interleave 2 Trending → 1 Newest
             var feed = new List<Post>();
             int trendingIndex = 0, newestIndex = 0;
 
@@ -155,14 +160,24 @@ namespace CampusHub.Controllers
                 }
             }
 
-            // ✅ Step 7: Prevent Duplicate Posts (Except Friends' Posts)
+            // ✅ Step 7: Prevent duplicates and prioritize friend posts
             var finalFeed = friendPosts.Concat(feed)
-                .Where(p => !seenPostIds.Contains(p.Id) || (friendIds.Contains(Guid.Parse(p.UserId)) && p.CreatedAt >= DateTime.UtcNow.AddHours(-24)))
+                .Where(p => !seenPostIds.Contains(p.Id) || (friendIds.Contains(p.UserId) && p.CreatedAt >= DateTime.UtcNow.AddHours(-24)))
                 .Distinct()
                 .ToList();
 
+            // ✅ Step 8: Fallback — if no posts found, show last 5 posts from database
+            if (!finalFeed.Any())
+            {
+                finalFeed = await _dbContext.Posts
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(5)
+                    .ToListAsync();
+            }
+
             return Ok(finalFeed);
         }
+
 
         [HttpPost("markPostAsSeen/{postId}")]
         public async Task<IActionResult> MarkPostAsSeen(Guid postId)
@@ -209,8 +224,9 @@ namespace CampusHub.Controllers
         [HttpPost("createPost")]
         public async Task<IActionResult> CreatePost([FromForm] CreatePostDto postDto)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString)) return Unauthorized("Invalid token.");
+            if (!Guid.TryParse(userIdString, out Guid userId)) return BadRequest("Invalid user ID format.");
 
             if (!Guid.TryParse(postDto.GroupId, out Guid groupId)) return BadRequest("Invalid group ID.");
 
@@ -249,6 +265,7 @@ namespace CampusHub.Controllers
 
             return Ok(new { Message = "Post created successfully.", PostId = post.Id });
         }
+
 
         [HttpGet("{groupId}")]
         public async Task<IActionResult> GetGroupPosts(Guid groupId)
@@ -319,27 +336,29 @@ namespace CampusHub.Controllers
                 await _dbContext.PostLikes.AddAsync(newLike);
                 post.LikeCount++;
 
-                // ✅ Send Notification
-                var notification = new Notification_Posts_Groups
+                // ✅ Send Notification (Triggers PostgreSQL `NOTIFY`)
+                await _dbContext.Notification_Posts_Groups.AddAsync(new Notification_Posts_Groups
                 {
-                    ReceiverId = post.UserId,
+                    ReceiverId = post.UserId.ToString(),
                     SenderId = userId,
                     Type = "Like",
                     Message = "Someone liked your post!",
                     PostId = post.Id
-                };
-                await _dbContext.Notification_Posts_Groups.AddAsync(notification);
+                });
             }
 
             await _dbContext.SaveChangesAsync();
             return Ok("Like action updated.");
         }
 
+
         [HttpPost("comment")]
         public async Task<IActionResult> CommentPost([FromBody] CommentPostDto commentDto)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdString)) return Unauthorized("Invalid token.");
+            if (!Guid.TryParse(userIdString, out Guid userId)) return BadRequest("Invalid user ID format.");
+
 
             var post = await _dbContext.Posts.FindAsync(commentDto.PostId);
             if (post == null) return NotFound("Post not found.");
@@ -355,7 +374,7 @@ namespace CampusHub.Controllers
             post.CommentCount++;
 
             // ✅ Detect Mentions
-            await DetectMentions(commentDto.Comment, post.Id, userId);
+            await DetectMentions(commentDto.Comment, post.Id, userIdString);
 
             await _dbContext.SaveChangesAsync();
             return Ok("Comment added.");
@@ -400,7 +419,7 @@ namespace CampusHub.Controllers
             {
                 PostId = shareDto.PostId,
                 UserId = userId,
-                SharedToGroupId = shareDto.SharedToGroupId
+                SharedToGroupId = shareDto.SharedToGroupId.ToString()
             };
 
             await _dbContext.PostShares.AddAsync(sharedPost);
@@ -408,7 +427,7 @@ namespace CampusHub.Controllers
             // ✅ Send Notification
             var notification = new Notification_Posts_Groups
             {
-                ReceiverId = post.UserId,
+                ReceiverId = post.UserId.ToString(),
                 SenderId = userId,
                 Type = "Share",
                 Message = "Someone shared your post!",
@@ -478,7 +497,7 @@ namespace CampusHub.Controllers
             if (post == null) return NotFound("Post not found.");
 
             // Check if user is post owner or an admin
-            var isOwner = post.UserId == userId;
+            var isOwner = post.UserId.ToString() == userId;
             var isAdmin = await _dbContext.GroupMemberPages
                 .AnyAsync(gm => gm.GroupId == post.GroupId && gm.UserId == userId && gm.IsAdmin);
 
@@ -489,27 +508,7 @@ namespace CampusHub.Controllers
 
             return Ok("Post deleted.");
         }
-        [HttpPost("reportPost")]
-        public async Task<IActionResult> ReportPost([FromBody] ReportPostDto reportDto)
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
-
-            var post = await _dbContext.Posts.FindAsync(reportDto.PostId);
-            if (post == null) return NotFound("Post not found.");
-
-            var report = new PostReport
-            {
-                PostId = reportDto.PostId,
-                UserId = userId,
-                Reason = reportDto.Reason
-            };
-
-            await _dbContext.PostReports.AddAsync(report);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok("Post reported successfully.");
-        }
+        
         [HttpGet("getNotifications")]
         public async Task<IActionResult> GetNotifications()
         {
@@ -530,6 +529,7 @@ namespace CampusHub.Controllers
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdString)) return Unauthorized("Invalid token.");
 
+            if (!Guid.TryParse(userIdString, out Guid userId)) return BadRequest("Invalid User ID format.");
             var group = await _dbContext.Groups.FindAsync(groupId);
             if (group == null) return NotFound("Group not found.");
 
@@ -601,27 +601,7 @@ namespace CampusHub.Controllers
             }
             return content;
         }
-        [HttpPost("reportPost")]
-        public async Task<IActionResult> ReportPost2([FromBody] ReportPostDto reportDto)
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
-
-            var post = await _dbContext.Posts.FindAsync(reportDto.PostId);
-            if (post == null) return NotFound("Post not found.");
-
-            var report = new ReportPost
-            {
-                PostId = reportDto.PostId,
-                UserId = userId,
-                Reason = reportDto.Reason
-            };
-
-            await _dbContext.ReportPosts.AddAsync(report);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok("Post reported successfully.");
-        }
+      
         [HttpGet("getReportedPosts")]
         public async Task<IActionResult> GetReportedPosts()
         {
@@ -639,52 +619,31 @@ namespace CampusHub.Controllers
 
             return Ok(reports);
         }
+
         [HttpGet("searchPosts")]
         public async Task<IActionResult> SearchPosts([FromQuery] string query)
         {
             if (string.IsNullOrWhiteSpace(query)) return BadRequest("Search query cannot be empty.");
 
-            query = query.ToLower();
-
-            var posts = await _dbContext.Posts
-                .Where(p => p.Description.ToLower().Contains(query) ||
-                            p.Description.ToLower().Contains($"#{query}")) // Hashtag support
-                .OrderByDescending(p => p.CreatedAt)
-                .Take(20)
-                .ToListAsync();
-
+            var posts = await _searchService.SearchPostsAsync(query);
             return Ok(posts);
         }
+
         [HttpGet("searchGroups")]
         public async Task<IActionResult> SearchGroups([FromQuery] string query)
         {
             if (string.IsNullOrWhiteSpace(query)) return BadRequest("Search query cannot be empty.");
 
-            query = query.ToLower();
-
-            var groups = await _dbContext.Groups
-                .Where(g => g.Name.ToLower().Contains(query) || g.Description.ToLower().Contains(query))
-                .OrderByDescending(g => g.CreatedAt)
-                .Take(20)
-                .ToListAsync();
-
+            var groups = await _searchService.SearchGroupsAsync(query);
             return Ok(groups);
         }
+
         [HttpGet("searchUsers")]
         public async Task<IActionResult> SearchUsers([FromQuery] string query)
         {
             if (string.IsNullOrWhiteSpace(query)) return BadRequest("Search query cannot be empty.");
 
-            query = query.ToLower();
-
-            var users = await _dbContext.Users
-                .Where(u => u.FirstName.ToLower().Contains(query) ||
-                            u.LastName.ToLower().Contains(query) ||
-                            u.Email.ToLower().Contains(query))
-                .OrderBy(u => u.FirstName)
-                .Take(20)
-                .ToListAsync();
-
+            var users = await _searchService.SearchUsersAsync(query);
             return Ok(users);
         }
         [HttpPost("createEvent")]
@@ -696,7 +655,7 @@ namespace CampusHub.Controllers
             var group = await _dbContext.Groups.FindAsync(eventDto.GroupId);
             if (group == null) return NotFound("Group not found.");
 
-            // ✅ Check if User is an Admin
+            // ✅ Check if User is an Admin (compare string with string)
             var isAdmin = await _dbContext.GroupMemberPages
                 .AnyAsync(gm => gm.GroupId == eventDto.GroupId && gm.UserId == userId && gm.IsAdmin);
 
@@ -717,6 +676,8 @@ namespace CampusHub.Controllers
 
             return Ok(new { Message = "Event created successfully.", EventId = newEvent.Id });
         }
+
+
         [HttpPost("joinEvent/{eventId}")]
         public async Task<IActionResult> JoinEvent(Guid eventId)
         {
@@ -831,22 +792,229 @@ namespace CampusHub.Controllers
                 Options = poll.Options.Select(o => new { o.Id, o.OptionText, o.VoteCount })
             });
         }
-        [HttpPost("postAnnouncement")]
-        public async Task<IActionResult> PostAnnouncement([FromBody] PostAnnouncementDto announcementDto)
+    
+      
+
+        [HttpGet("getTrendingPosts")]
+        public async Task<IActionResult> GetTrendingPosts()
+        {
+            var trendingPosts = await _dbContext.Posts
+                .FromSqlRaw("SELECT * FROM trending_posts")
+                .ToListAsync();
+
+            return Ok(trendingPosts);
+        }
+
+        [HttpGet("getHotPosts")]
+        public async Task<IActionResult> GetHotPosts()
+        {
+            var hotPosts = await _dbContext.Posts
+                .FromSqlRaw("SELECT * FROM hot_posts")
+                .ToListAsync();
+
+            return Ok(hotPosts);
+        }
+
+        [HttpPost("markNotificationAsRead/{notificationId}")]
+        public async Task<IActionResult> MarkNotificationAsRead(Guid notificationId)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
 
+            var notification = await _dbContext.Notification_Posts_Groups
+                .FirstOrDefaultAsync(n => n.Id == notificationId && n.ReceiverId == userId);
+
+            if (notification == null) return NotFound("Notification not found.");
+
+            notification.IsRead = true;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("Notification marked as read.");
+        }
+        [HttpPost("clearAllNotifications")]
+        public async Task<IActionResult> ClearAllNotifications()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
+
+            var notifications = await _dbContext.Notification_Posts_Groups
+                .Where(n => n.ReceiverId == userId)
+                .ToListAsync();
+
+            _dbContext.Notification_Posts_Groups.RemoveRange(notifications);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("All notifications cleared.");
+        }
+        [HttpGet("getUnreadNotificationsCount")]
+        public async Task<IActionResult> GetUnreadNotificationsCount()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
+
+            var count = await _dbContext.Notification_Posts_Groups
+                .CountAsync(n => n.ReceiverId == userId && !n.IsRead);
+
+            return Ok(new { UnreadCount = count });
+        }
+        [HttpPost("reportPost")]
+        public async Task<IActionResult> ReportPost([FromBody] ReportPostDto reportDto)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized("Invalid token.");
+
+            var post = await _dbContext.Posts.FindAsync(reportDto.PostId);
+            if (post == null) return NotFound("Post not found.");
+
+            var report = new PostReport
+            {
+                PostId = reportDto.PostId,
+                UserId = userId,
+                Reason = reportDto.Reason
+            };
+
+            await _dbContext.PostReports.AddAsync(report);
+
+            // 🔸 Auto-flag post if reported more than 5 times
+            var reportCount = await _dbContext.PostReports.CountAsync(r => r.PostId == reportDto.PostId);
+            if (reportCount >= 5)
+            {
+                post.IsFlagged = true;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("Post reported successfully.");
+        }
+        [HttpGet("getFlaggedPosts")]
+        public async Task<IActionResult> GetFlaggedPosts()
+        {
+            var flaggedPosts = await _dbContext.Posts
+                .Where(p => p.IsFlagged)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            return Ok(flaggedPosts);
+        }
+
+        [HttpPost("unflagPost/{postId}")]
+        public async Task<IActionResult> UnflagPost(Guid postId)
+        {
+            var post = await _dbContext.Posts.FindAsync(postId);
+            if (post == null) return NotFound("Post not found.");
+
+            post.IsFlagged = false;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("Post unflagged.");
+        }
+        [HttpGet("advancedSearch")]
+        public async Task<IActionResult> AdvancedSearch([FromQuery] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return BadRequest("Query cannot be empty.");
+
+            var hashtagResults = await _dbContext.Posts
+                .Where(p => p.Description.Contains("#" + query))
+                .ToListAsync();
+
+            var keywordResults = await _searchService.SearchPostsAsync(query);
+            var userResults = await _searchService.SearchUsersAsync(query);
+            var groupResults = await _searchService.SearchGroupsAsync(query);
+
+            return Ok(new
+            {
+                HashtagResults = hashtagResults,
+                KeywordResults = keywordResults,
+                UserResults = userResults,
+                GroupResults = groupResults
+            });
+        }
+        [HttpGet("getEventParticipants/{eventId}")]
+        public async Task<IActionResult> GetEventParticipants(Guid eventId)
+        {
+            var participants = await _dbContext.EventParticipants
+                .Where(ep => ep.EventId == eventId)
+                .Select(ep => ep.UserId)
+                .ToListAsync();
+
+            return Ok(participants);
+        }
+
+        [HttpPost("removeEventParticipant/{eventId}/{userId}")]
+        public async Task<IActionResult> RemoveEventParticipant(Guid eventId, string userId)
+        {
+            var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(adminId)) return Unauthorized();
+
+            var eventEntity = await _dbContext.Events.FindAsync(eventId);
+            if (eventEntity == null) return NotFound("Event not found.");
+
+            var isAdmin = await _dbContext.GroupMemberPages
+                .AnyAsync(m => m.GroupId == eventEntity.GroupId && m.UserId == adminId && m.IsAdmin);
+            if (!isAdmin) return Unauthorized("Only admins can remove participants.");
+
+            var participant = await _dbContext.EventParticipants
+                .FirstOrDefaultAsync(ep => ep.EventId == eventId && ep.UserId == userId);
+            if (participant == null) return NotFound("Participant not found.");
+
+            _dbContext.EventParticipants.Remove(participant);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("Participant removed.");
+        }
+
+        [HttpPost("cancelEvent/{eventId}")]
+        public async Task<IActionResult> CancelEvent(Guid eventId)
+        {
+            var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(adminId)) return Unauthorized();
+
+            var eventEntity = await _dbContext.Events.FindAsync(eventId);
+            if (eventEntity == null) return NotFound("Event not found.");
+
+            var isAdmin = await _dbContext.GroupMemberPages
+                .AnyAsync(m => m.GroupId == eventEntity.GroupId && m.UserId == adminId && m.IsAdmin);
+            if (!isAdmin) return Unauthorized("Only admins can cancel events.");
+
+            _dbContext.Events.Remove(eventEntity);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("Event cancelled.");
+        }
+        [HttpPost("closePoll/{pollId}")]
+        public async Task<IActionResult> ClosePoll(Guid pollId)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var poll = await _dbContext.Polls.FindAsync(pollId);
+            if (poll == null) return NotFound("Poll not found.");
+
+            var isAdmin = await _dbContext.GroupMemberPages
+                .AnyAsync(m => m.GroupId == poll.GroupId && m.UserId == userId && m.IsAdmin);
+            if (!isAdmin) return Unauthorized("Only admins can close polls.");
+
+            poll.IsClosed = true;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("Poll closed successfully.");
+        }
+        [HttpPost("postAnnouncement")]
+        public async Task<IActionResult> PostAnnouncement([FromBody] PostAnnouncementDto announcementDto)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
             var isAdmin = await _dbContext.GroupMemberPages
                 .AnyAsync(m => m.GroupId == announcementDto.GroupId && m.UserId == userId && m.IsAdmin);
-
             if (!isAdmin) return Unauthorized("Only admins can post announcements.");
 
             var announcement = new GroupAnnouncement
             {
                 GroupId = announcementDto.GroupId,
                 AdminId = userId,
-                Content = announcementDto.Content
+                Content = announcementDto.Content,
+                IsSticky = announcementDto.IsSticky
             };
 
             _dbContext.GroupAnnouncements.Add(announcement);
@@ -859,7 +1027,8 @@ namespace CampusHub.Controllers
         {
             var announcements = await _dbContext.GroupAnnouncements
                 .Where(a => a.GroupId == groupId)
-                .OrderByDescending(a => a.CreatedAt)
+                .OrderByDescending(a => a.IsSticky)
+                .ThenByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
             return Ok(announcements);

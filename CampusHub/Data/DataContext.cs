@@ -35,6 +35,20 @@ namespace CampusHub.Data
         public DbSet<PollOption> PollOptions { get; set; }
         public DbSet<PollVote> PollVotes { get; set; }
         public DbSet<GroupAnnouncement> GroupAnnouncements { get; set; }
+        public DbSet<PostMention> PostMentions { get; set; }
+
+
+
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // ✅ Ignore the search_vector column in EF Core
+            modelBuilder.Entity<Post>().Ignore(p => p.SearchVector);
+            modelBuilder.Entity<Group>().Ignore(g => g.SearchVector);
+            modelBuilder.Entity<AppUser>().Ignore(u => u.SearchVector);
+        }
 
     }
 }

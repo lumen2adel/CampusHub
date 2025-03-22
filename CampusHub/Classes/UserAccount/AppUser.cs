@@ -19,5 +19,8 @@ namespace CampusHub.Classes.UserAccount
         public ICollection<AppUser>? Friends { get; set; }
         //public string Username { get; set; }
 
+        [NotMapped]
+        public string SearchVector { get; set; }
+
     }
 }

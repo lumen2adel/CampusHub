@@ -3,6 +3,7 @@ using System;
 using CampusHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace campushub.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250320215001_jsdkskda")]
+    partial class jsdkskda
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,7 +44,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Chats", (string)null);
+                    b.ToTable("Chats");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.ChatMessage", b =>
@@ -89,7 +92,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChatMessages", (string)null);
+                    b.ToTable("ChatMessages");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.GroupChat", b =>
@@ -111,7 +114,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GroupChats", (string)null);
+                    b.ToTable("GroupChats");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.GroupMember", b =>
@@ -138,7 +141,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("GroupMembers", (string)null);
+                    b.ToTable("GroupMembers");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.GroupMessage", b =>
@@ -169,7 +172,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("GroupMessages", (string)null);
+                    b.ToTable("GroupMessages");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.Event", b =>
@@ -204,7 +207,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Events", (string)null);
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.EventParticipant", b =>
@@ -227,7 +230,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("EventParticipants", (string)null);
+                    b.ToTable("EventParticipants");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.Group", b =>
@@ -256,7 +259,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Groups", (string)null);
+                    b.ToTable("Groups");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.GroupAnnouncement", b =>
@@ -284,7 +287,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GroupAnnouncements", (string)null);
+                    b.ToTable("GroupAnnouncements");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.GroupJoinRequest", b =>
@@ -310,7 +313,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("GroupId");
 
-                    b.ToTable("GroupJoinRequests", (string)null);
+                    b.ToTable("GroupJoinRequests");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.GroupMemberPage", b =>
@@ -333,7 +336,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("GroupId");
 
-                    b.ToTable("GroupMemberPages", (string)null);
+                    b.ToTable("GroupMemberPages");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.Notification_Posts_Groups", b =>
@@ -369,7 +372,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Notification_Posts_Groups", (string)null);
+                    b.ToTable("Notification_Posts_Groups");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.Poll", b =>
@@ -400,7 +403,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Polls", (string)null);
+                    b.ToTable("Polls");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.PollOption", b =>
@@ -423,7 +426,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PollId");
 
-                    b.ToTable("PollOptions", (string)null);
+                    b.ToTable("PollOptions");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.PollVote", b =>
@@ -451,7 +454,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PollId");
 
-                    b.ToTable("PollVotes", (string)null);
+                    b.ToTable("PollVotes");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.Post", b =>
@@ -491,7 +494,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("GroupId");
 
-                    b.ToTable("Posts", (string)null);
+                    b.ToTable("Posts");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.PostComment", b =>
@@ -517,7 +520,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("PostComments", (string)null);
+                    b.ToTable("PostComments");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.PostLike", b =>
@@ -544,7 +547,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("PostLikes", (string)null);
+                    b.ToTable("PostLikes");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.PostMention", b =>
@@ -572,7 +575,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("PostMentions", (string)null);
+                    b.ToTable("PostMentions");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.PostReport", b =>
@@ -599,7 +602,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("PostReports", (string)null);
+                    b.ToTable("PostReports");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.PostShare", b =>
@@ -625,7 +628,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("PostShares", (string)null);
+                    b.ToTable("PostShares");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.ReportPost", b =>
@@ -655,7 +658,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("PostId");
 
-                    b.ToTable("ReportPosts", (string)null);
+                    b.ToTable("ReportPosts");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Group_Posts.UserSeenPost", b =>
@@ -676,7 +679,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserSeenPosts", (string)null);
+                    b.ToTable("UserSeenPosts");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.Notification", b =>
@@ -701,7 +704,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.UserAccount.AppUser", b =>
@@ -751,7 +754,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("AppUserId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.UserAccount.FriendRequest", b =>
@@ -778,7 +781,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("FriendRequests", (string)null);
+                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.UserAccount.Friendship", b =>
@@ -808,7 +811,7 @@ namespace campushub.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Friendships", (string)null);
+                    b.ToTable("Friendships");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.UserAccount.TempUser", b =>
@@ -849,7 +852,7 @@ namespace campushub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TempUsers", (string)null);
+                    b.ToTable("TempUsers");
                 });
 
             modelBuilder.Entity("CampusHub.Classes.GroupMember", b =>

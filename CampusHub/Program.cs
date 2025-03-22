@@ -1,6 +1,7 @@
 using CampusHub.Classes.UserAccount;
 using CampusHub.Data;
 using CampusHub.Helper;
+using CampusHub.Hubs;
 using CampusHub.JwtServices;
 using CampusHub.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -25,6 +26,33 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.AddTransient<EmailService>();
 
 builder.Services.AddSignalR();
+
+
+
+
+
+
+builder.Services.AddHostedService<TrendingPostsService>();
+builder.Services.AddSingleton<TrendingPostsService>();
+
+
+builder.Services.AddHostedService<PostgreSqlNotificationService>();
+//builder.Services.AddHostedService<TrendingPostsService>();
+builder.Services.AddHostedService<NotificationService>();
+builder.Services.AddScoped<SearchService>();
+builder.Services.AddHostedService<FeedRankingService>();
+builder.Services.AddScoped<MentionService>();
+builder.Services.AddHostedService<NotificationListenerService>();
+
+
+
+
+
+
+
+
+
+
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -116,6 +144,7 @@ app.UseSwaggerUI(c =>
     c.EnableDeepLinking();
     c.ShowCommonExtensions();
 });
+app.MapHub<NotificationHub>("/notificationHub");
 
 // Middleware configuration
 //app.UseHttpsRedirection();

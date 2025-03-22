@@ -4,5 +4,6 @@
     {
         public Guid GroupId { get; set; } // The group where the announcement is posted
         public string Content { get; set; } // Announcement text content
+        public bool IsSticky { get; set; } = false;
     }
 }

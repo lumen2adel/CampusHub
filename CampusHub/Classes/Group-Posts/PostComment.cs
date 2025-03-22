@@ -4,7 +4,7 @@
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid PostId { get; set; }  // Reference to the post
-        public string UserId { get; set; } // Who commented
+        public Guid UserId { get; set; } // Who commented
         public string Comment { get; set; } // The comment text
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
