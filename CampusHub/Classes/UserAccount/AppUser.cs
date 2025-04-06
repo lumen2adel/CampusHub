@@ -1,4 +1,5 @@
-﻿using CampusHub.Enums;
+﻿using campushub.Classes.UserAccount;
+using CampusHub.Enums;
 using CampusHub.Helper;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -21,6 +22,8 @@ namespace CampusHub.Classes.UserAccount
 
         [NotMapped]
         public string SearchVector { get; set; }
+
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
     }
 }

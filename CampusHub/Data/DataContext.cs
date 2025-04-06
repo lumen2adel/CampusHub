@@ -2,6 +2,7 @@
 using CampusHub.Classes;
 using Microsoft.EntityFrameworkCore;
 using CampusHub.Classes.Group_Posts;
+using campushub.Classes.UserAccount;
 
 namespace CampusHub.Data
 {
@@ -37,6 +38,7 @@ namespace CampusHub.Data
         public DbSet<GroupAnnouncement> GroupAnnouncements { get; set; }
         public DbSet<PostMention> PostMentions { get; set; }
 
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
 
 

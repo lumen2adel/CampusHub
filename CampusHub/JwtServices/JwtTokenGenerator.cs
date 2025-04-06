@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 
@@ -58,13 +59,20 @@ namespace CampusHub.JwtServices
             new Claim(ClaimTypes.Surname, lastName),
             new Claim(ClaimTypes.Email, email)
                 }),
-                Expires = DateTime.UtcNow.AddDays(_jwtConfig.ExpireDays),
+                Expires = DateTime.UtcNow.AddMinutes(25),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
                 Issuer = _jwtConfig.Issuer,
                 Audience = _jwtConfig.Audience,
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+        public string GenerateRefreshToken()
+        {
+            var randomBytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
         }
 
 

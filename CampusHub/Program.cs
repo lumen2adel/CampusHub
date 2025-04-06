@@ -11,6 +11,11 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Reflection;
 using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using campushub.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +32,20 @@ builder.Services.AddTransient<EmailService>();
 
 builder.Services.AddSignalR();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("loginPolicy", context =>
+    {
+        var ip = context.Request.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        });
+    });
+});
 
 
 
@@ -47,7 +66,9 @@ builder.Services.AddHostedService<NotificationListenerService>();
 
 
 
-
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<CaptchaValidator>();
+builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
 
 
@@ -118,8 +139,16 @@ builder.Services.AddCors(options =>
     options.AddPolicy("dev", policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        //.WithOrigins(
+        //    "https://api.laith2.me",
+        //    "http://api.laith2.me",
+        //    "https://localhost:3000",
+        //    "http://localhost:3000",
+        //    "https://laith2.me",
+        //    "http://laith2.me")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            //.AllowCredentials(); 
     });
 });
 
@@ -145,16 +174,18 @@ app.UseSwaggerUI(c =>
     c.ShowCommonExtensions();
 });
 app.MapHub<NotificationHub>("/notificationHub");
+app.UseRateLimiter();
+
 
 // Middleware configuration
 //app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors("dev");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<CampusHub.Hubs.ChatHub>("/chathub"); 
-
+app.MapHub<CampusHub.Hubs.ChatHub>("/chathub");
 app.Run();

@@ -6,5 +6,6 @@ namespace CampusHub.JwtServices
     {
         string GenerateToken(Guid userId, UserRole role, string firstName, string lastName, string email);
         public string? ValidateTokenAndGetUserId(string token);
+        string GenerateRefreshToken();
     }
 }
