@@ -43,18 +43,20 @@ namespace CampusHub.Services
                 .ToListAsync();
         }
 
-        public async Task<List<AppUser>> SearchUsersAsync(string query)
+        public async Task<List<UserSearchResult>> SearchUsersAsync(string query)
         {
+            // Raw SQL only filters; projecting to UserSearchResult means credential columns are
+            // never selected. E-mail is not searchable, so search cannot confirm who is registered.
             return await _dbContext.Users
                 .FromSqlRaw(@"
-            SELECT * FROM ""Users"" 
-            WHERE search_vector @@ plainto_tsquery({0}) 
-            OR ""FirstName"" ILIKE '%' || {0} || '%' 
-            OR ""LastName"" ILIKE '%' || {0} || '%' 
-            OR ""Email"" ILIKE '%' || {0} || '%' 
-            OR ""FirstName"" % {0}
-            ORDER BY ""FirstName"" ASC 
-            LIMIT 20;", query)
+            SELECT * FROM ""Users""
+            WHERE search_vector @@ plainto_tsquery({0})
+            OR ""FirstName"" ILIKE '%' || {0} || '%'
+            OR ""LastName"" ILIKE '%' || {0} || '%'
+            OR ""FirstName"" % {0}", query)
+                .OrderBy(u => u.FirstName)
+                .Take(20)
+                .Select(u => new UserSearchResult(u.Id, u.FirstName, u.LastName))
                 .ToListAsync();
         }
 
