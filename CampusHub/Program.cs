@@ -32,7 +32,7 @@ builder.Services.AddDbContext<DataContext>(options =>
 });
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddTransient<EmailService>();
+builder.Services.AddTransient<IEmailService, EmailService>();
 
 builder.Services.AddSignalR();
 
@@ -65,7 +65,7 @@ builder.Services.AddHostedService<NotificationListenerService>();
 
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<CaptchaValidator>();
+builder.Services.AddScoped<ICaptchaValidator, CaptchaValidator>();
 builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
 

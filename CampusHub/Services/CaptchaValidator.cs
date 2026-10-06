@@ -1,8 +1,8 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace campushub.Services
 {
-    public class CaptchaValidator
+    public class CaptchaValidator : ICaptchaValidator
     {
         private readonly IConfiguration _configuration;
         private readonly IHttpClientFactory _httpClientFactory;

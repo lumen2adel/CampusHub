@@ -33,9 +33,18 @@ jobs:
       - name: Build
         run: dotnet build CampusHub.sln --no-restore --configuration Release
 
-      # Integration tests start PostgreSQL through Testcontainers; Docker is preinstalled on ubuntu-latest
+      # Integration tests start PostgreSQL through Testcontainers; Docker is preinstalled on ubuntu-latest.
+      # global.json opts into Microsoft.Testing.Platform, hence the --solution syntax and xUnit report flags.
       - name: Test
-        run: dotnet test CampusHub.sln --no-build --configuration Release --logger trx --results-directory TestResults
+        run: >
+          dotnet test --solution CampusHub.sln --no-build --configuration Release
+          --results-directory TestResults
+          --report-xunit-trx
+          --report-xunit-markdown --report-xunit-markdown-filename summary.md
+
+      - name: Test summary
+        if: ${{ !cancelled() }}
+        run: cat TestResults/summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
       - name: Upload test results
         if: ${{ !cancelled() }}
