@@ -147,6 +147,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Authorization policies (used with [Authorize(Policy = Policies.CanModerate)])
+builder.Services.AddAuthorization(options =>
+{
+    // TODO(Laith): register the Policies.CanModerate policy here.
+    // See tests/CampusHub.IntegrationTests/ModerationTests.cs for the behaviour it must have.
+});
+
 // Add CORS
 builder.Services.AddCors(options =>
 {
