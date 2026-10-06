@@ -62,7 +62,7 @@ namespace CampusHub.Services
             public string SenderId { get; init; } = string.Empty;
             public string Message { get; init; } = string.Empty;
             public string Type { get; init; } = string.Empty;
-            public Guid PostId { get; init; }
+            public Guid? PostId { get; init; } // null for notifications not tied to a post
             public DateTime CreatedAt { get; init; }
         }
     }
