@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "campushub", "CampusHub\campushub.csproj", "{9824DFEB-96B6-4D0E-81F6-6BF8CEC1D2FD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CampusHub", "CampusHub\CampusHub.csproj", "{9824DFEB-96B6-4D0E-81F6-6BF8CEC1D2FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
