@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using campushub.Classes.UserAccount;
+﻿using campushub.Classes.UserAccount;
 using campushub.Services;
 using CampusHub.Classes.UserAccount;
 using CampusHub.Data;
@@ -24,15 +23,13 @@ namespace CampusHub.Controllers
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly DataContext _dataContext;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
-        private readonly IMapper _mapper;
         private readonly EmailService _emailService;
         private readonly ILogger<AccountController> _logger;
 
-        public AccountController(IHubContext<ChatHub> hubContext, DataContext dataContext, IJwtTokenGenerator jwtTokenGenerator, IMapper mapper, EmailService emailService, ILogger<AccountController> logger)
+        public AccountController(IHubContext<ChatHub> hubContext, DataContext dataContext, IJwtTokenGenerator jwtTokenGenerator, EmailService emailService, ILogger<AccountController> logger)
         {
             _dataContext = dataContext;
             _jwtTokenGenerator = jwtTokenGenerator;
-            _mapper = mapper;
             _emailService = emailService;
             _logger = logger;
             _hubContext = hubContext;

@@ -35,16 +35,16 @@ CampusHub was my graduation project at **Al-Mamoun University College** (Baghdad
 
 | Area | Technology |
 |---|---|
-| Framework | ASP.NET Core 8 Web API |
-| Database | PostgreSQL, Entity Framework Core 8 (Npgsql) |
+| Framework | ASP.NET Core 10 Web API |
+| Database | PostgreSQL, Entity Framework Core 10 (Npgsql) |
 | Real-time | SignalR |
 | Auth | JWT bearer, refresh tokens, BCrypt |
 | Background work | `BackgroundService` hosted services |
-| Other | AutoMapper, SMTP email (`System.Net.Mail`), Google reCAPTCHA, Swagger / OpenAPI |
+| Other | SMTP email (`System.Net.Mail`), Google reCAPTCHA, Swagger / OpenAPI (Swashbuckle) |
 
 ## Running locally
 
-**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download) and PostgreSQL 14 or later.
+**Prerequisites:** [.NET 10 SDK](https://dotnet.microsoft.com/download) and PostgreSQL 14 or later.
 
 1. **Clone the repo and restore the tools**
 
@@ -77,7 +77,7 @@ CampusHub was my graduation project at **Al-Mamoun University College** (Baghdad
 
 ## API overview
 
-All endpoints are documented and testable through **Swagger UI** at `/swagger`. To call protected endpoints, use the **Authorize** button and paste a JWT from `POST /api/Account/login`.
+All endpoints are documented and testable through **Swagger UI** at `/swagger`. To call protected endpoints, use the **Authorize** button and paste a JWT from `POST /api/Account/Login/login`.
 
 | Controller | Base route | Purpose |
 |---|---|---|

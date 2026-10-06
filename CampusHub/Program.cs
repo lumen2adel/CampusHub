@@ -1,19 +1,17 @@
-using CampusHub.Classes.UserAccount;
+﻿using CampusHub.Classes.UserAccount;
 using CampusHub.Data;
-using CampusHub.Helper;
 using CampusHub.Hubs;
 using CampusHub.JwtServices;
 using CampusHub.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Reflection;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
 using campushub.Services;
 
 
@@ -33,8 +31,6 @@ builder.Services.AddDbContext<DataContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DataContext"));
 });
 
-// Add AutoMapper
-builder.Services.AddAutoMapper(typeof(BaseMappingProfile));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<EmailService>();
 
@@ -100,19 +96,10 @@ builder.Services.AddSwaggerGen(opt =>
         BearerFormat = "JWT",
         Scheme = "bearer"
     });
-    opt.AddSecurityRequirement(new OpenApiSecurityRequirement
+    // Microsoft.OpenApi v2: requirements reference the scheme through the document
+    opt.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] { }
-        }
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
 });
 

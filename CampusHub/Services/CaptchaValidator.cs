@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace campushub.Services
 {
@@ -15,35 +15,37 @@ namespace campushub.Services
 
         public async Task<bool> VerifyTokenAsync(string token)
         {
-            var secret = _configuration["Captcha:SecretKey"];
             var client = _httpClientFactory.CreateClient();
 
-            var response = await client.PostAsync(
-                $"https://www.google.com/recaptcha/api/siteverify?secret={secret}&response={token}",
-                null
-            );
+            // Send as a form body so the values are URL-encoded and never logged as part of the URL
+            using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["secret"] = _configuration["Captcha:SecretKey"] ?? string.Empty,
+                ["response"] = token
+            });
+            var response = await client.PostAsync("https://www.google.com/recaptcha/api/siteverify", content);
+            if (!response.IsSuccessStatusCode) return false;
 
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<CaptchaResponse>(json);
+            var result = await response.Content.ReadFromJsonAsync<CaptchaResponse>();
             return result?.Success == true;
         }
 
         private class CaptchaResponse
         {
-            [JsonProperty("success")]
+            [JsonPropertyName("success")]
             public bool Success { get; set; }
 
-            [JsonProperty("score")]
+            [JsonPropertyName("score")]
             public float Score { get; set; }
 
-            [JsonProperty("action")]
-            public string Action { get; set; }
+            [JsonPropertyName("action")]
+            public string? Action { get; set; }
 
-            [JsonProperty("challenge_ts")]
-            public string ChallengeTs { get; set; }
+            [JsonPropertyName("challenge_ts")]
+            public string? ChallengeTs { get; set; }
 
-            [JsonProperty("hostname")]
-            public string Hostname { get; set; }
+            [JsonPropertyName("hostname")]
+            public string? Hostname { get; set; }
         }
     }
 }

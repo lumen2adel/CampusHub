@@ -1,6 +1,20 @@
 @CampusHub_HostAddress = http://localhost:5007
 
-GET {{CampusHub_HostAddress}}/weatherforecast/
-Accept: application/json
+# Log in and copy the returned token into @token below
+POST {{CampusHub_HostAddress}}/api/Account/Login/login
+Content-Type: application/json
+
+{
+  "email": "student@example.com",
+  "password": "Passw0rd!",
+  "captchaToken": "<reCAPTCHA token>"
+}
+
+###
+
+@token = paste-jwt-here
+
+GET {{CampusHub_HostAddress}}/api/Account/UserProfile/profile
+Authorization: Bearer {{token}}
 
 ###

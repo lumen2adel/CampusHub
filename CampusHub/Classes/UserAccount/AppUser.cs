@@ -1,6 +1,5 @@
 ﻿using campushub.Classes.UserAccount;
 using CampusHub.Enums;
-using CampusHub.Helper;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CampusHub.Classes.UserAccount
