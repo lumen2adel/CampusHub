@@ -44,6 +44,16 @@ CampusHub was my graduation project at **Al-Mamoun University College** (Baghdad
 
 ## Running locally
 
+### Option A: Docker (one command)
+
+```bash
+docker compose up --build
+```
+
+Then open **http://localhost:8080/swagger**. This starts PostgreSQL 17 and the API, and applies all migrations automatically. With no SMTP or reCAPTCHA settings, the compose setup runs in Development mode: verification codes are printed to the API log (`docker compose logs api`) and any CAPTCHA token is accepted. Values in `docker-compose.yml` are local demo defaults; override them in a git-ignored `.env` file.
+
+### Option B: .NET SDK + your own PostgreSQL
+
 **Prerequisites:** [.NET 10 SDK](https://dotnet.microsoft.com/download) and PostgreSQL 14 or later.
 
 1. **Clone the repo and restore the tools**

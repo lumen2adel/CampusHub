@@ -1,0 +1,16 @@
+# Keep the build context small and never copy secrets or local build output into an image
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/appsettings.Development.json
+**/wwwroot/uploads/
+**/TestResults/
+.git/
+.github/
+tests/
+.env
+Dockerfile
+docker-compose*.yml
+*.md

@@ -1,0 +1,39 @@
+# Local demo: `docker compose up --build`, then open http://localhost:8080/swagger
+# Values below are for local use only. Override them in a .env file (git-ignored), e.g. JWT_SECRET=...
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: campushub
+      POSTGRES_USER: campushub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-campushub-local}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campushub -d campushub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy   # wait until Postgres accepts connections, not just until it starts
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development   # e-mails are logged and reCAPTCHA is skipped unless configured
+      ConnectionStrings__DataContext: "Host=db;Port=5432;Database=campushub;Username=campushub;Password=${POSTGRES_PASSWORD:-campushub-local}"
+      jwt__Secret: ${JWT_SECRET:-local-demo-only-jwt-secret-change-me-0123456789}
+      Database__ApplyMigrationsOnStartup: "true"
+      # Optional, to send real e-mail / verify reCAPTCHA:
+      EmailSettings__Email: ${SMTP_EMAIL:-}
+      EmailSettings__Password: ${SMTP_PASSWORD:-}
+      Captcha__SecretKey: ${RECAPTCHA_SECRET:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/wwwroot/uploads
+
+volumes:
+  pgdata:
+  uploads:

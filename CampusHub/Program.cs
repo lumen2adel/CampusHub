@@ -32,7 +32,12 @@ builder.Services.AddDbContext<DataContext>(options =>
 });
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddTransient<IEmailService, EmailService>();
+// Without SMTP credentials in Development (e.g. docker compose), log e-mails instead of sending them
+var useDevEmail = builder.Environment.IsDevelopment() && string.IsNullOrEmpty(builder.Configuration["EmailSettings:Password"]);
+if (useDevEmail)
+    builder.Services.AddTransient<IEmailService, LoggingEmailService>();
+else
+    builder.Services.AddTransient<IEmailService, EmailService>();
 
 builder.Services.AddSignalR();
 
@@ -65,7 +70,11 @@ builder.Services.AddHostedService<NotificationListenerService>();
 
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<ICaptchaValidator, CaptchaValidator>();
+// Same for reCAPTCHA: Development without a secret key accepts any token; other environments always verify
+if (builder.Environment.IsDevelopment() && string.IsNullOrEmpty(builder.Configuration["Captcha:SecretKey"]))
+    builder.Services.AddScoped<ICaptchaValidator, DevelopmentCaptchaValidator>();
+else
+    builder.Services.AddScoped<ICaptchaValidator, CaptchaValidator>();
 builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
 
@@ -161,6 +170,14 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 
 var app = builder.Build(); // Build the app after all services are registered
+
+// Opt-in (docker compose sets it): apply pending EF migrations before the app starts serving.
+// Fine for a single instance; with several replicas, run migrations as a separate deploy step instead.
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<DataContext>().Database.Migrate();
+}
 
 
 app.UseSwagger();

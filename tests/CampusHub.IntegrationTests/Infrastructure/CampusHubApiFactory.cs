@@ -19,7 +19,7 @@ namespace CampusHub.IntegrationTests.Infrastructure;
 public sealed class CampusHubApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     // Must be at least 32 bytes for HMAC-SHA256
-    public const string JwtSecret = "integration-tests-jwt-secret-at-least-32-bytes";
+    public const string JwtSecret = "integration-tests-jwt-secret-at-least-32-bytes"; // gitleaks:allow (test-only value)
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
