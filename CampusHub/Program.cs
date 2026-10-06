@@ -1,4 +1,6 @@
-﻿using CampusHub.Classes.UserAccount;
+﻿using CampusHub.Enums;
+using CampusHub.Authorization;
+using CampusHub.Classes.UserAccount;
 using CampusHub.Data;
 using CampusHub.Hubs;
 using CampusHub.JwtServices;
@@ -145,6 +147,15 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };
+});
+
+// Authorization policies (used with [Authorize(Policy = Policies.CanModerate)])
+builder.Services.AddAuthorization(options =>
+{
+    // Platform moderators review flagged content across all groups.
+    // Role names match UserRole.ToString(), which JwtTokenGenerator writes into the role claim.
+    options.AddPolicy(Policies.CanModerate, policy =>
+        policy.RequireRole(nameof(UserRole.Admin), nameof(UserRole.SuperAdmin)));
 });
 
 // Add CORS

@@ -1,4 +1,5 @@
 ﻿using CampusHub.Classes;
+using CampusHub.Authorization;
 using CampusHub.Classes.Group_Posts;
 using CampusHub.Data;
 using CampusHub.Enums;
@@ -600,6 +601,7 @@ namespace CampusHub.Controllers
             return content;
         }
       
+        [Authorize(Policy = Policies.CanModerate)]
         [HttpGet("getReportedPosts")]
         public async Task<IActionResult> GetReportedPosts()
         {
@@ -884,6 +886,7 @@ namespace CampusHub.Controllers
 
             return Ok("Post reported successfully.");
         }
+        [Authorize(Policy = Policies.CanModerate)]
         [HttpGet("getFlaggedPosts")]
         public async Task<IActionResult> GetFlaggedPosts()
         {
@@ -895,6 +898,7 @@ namespace CampusHub.Controllers
             return Ok(flaggedPosts);
         }
 
+        [Authorize(Policy = Policies.CanModerate)]
         [HttpPost("unflagPost/{postId}")]
         public async Task<IActionResult> UnflagPost(Guid postId)
         {
