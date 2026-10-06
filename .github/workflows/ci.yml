@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: the workflow only needs to read the code
+permissions:
+  contents: read
+
+# A newer push to the same branch/PR cancels the outdated run
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # Actions are pinned to full commit SHAs (tags can be moved); the comment shows the version
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore CampusHub.sln
+
+      - name: Build
+        run: dotnet build CampusHub.sln --no-restore --configuration Release
+
+      # Integration tests start PostgreSQL through Testcontainers; Docker is preinstalled on ubuntu-latest
+      - name: Test
+        run: dotnet test CampusHub.sln --no-build --configuration Release --logger trx --results-directory TestResults
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: ignore
