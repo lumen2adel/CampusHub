@@ -1,8 +1,7 @@
-﻿using CampusHub.Helper;
-
+﻿
 namespace CampusHub.Classes.UserAccount
 {
-    public class Friendship : BaseEntity , IMapFrom<AppUser>
+    public class Friendship : BaseEntity
     {
         public Guid UserId { get; set; }
         public AppUser User { get; set; }

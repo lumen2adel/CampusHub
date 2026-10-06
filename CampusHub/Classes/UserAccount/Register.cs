@@ -1,9 +1,8 @@
 ﻿using CampusHub.Enums;
-using CampusHub.Helper;
 
 namespace CampusHub.Classes.UserAccount
 {
-    public class Register : IMapFrom<AppUser>
+    public class Register
     {
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
