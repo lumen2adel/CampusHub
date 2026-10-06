@@ -4,12 +4,12 @@ namespace CampusHub.Services
 {
     public class FeedRankingService : BackgroundService
     {
-        //private readonly string _connectionString = "Server=localhost;Database=CampusHub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
-        private readonly string _connectionString = "Server=YOUR_DB_HOST;Database=campushub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
+        private readonly string _connectionString;
         private readonly ILogger<FeedRankingService> _logger;
 
-        public FeedRankingService(ILogger<FeedRankingService> logger)
+        public FeedRankingService(IConfiguration configuration, ILogger<FeedRankingService> logger)
         {
+            _connectionString = configuration.GetConnectionString("DataContext")!;
             _logger = logger;
         }
 

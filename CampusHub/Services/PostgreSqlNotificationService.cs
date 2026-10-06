@@ -4,8 +4,12 @@ namespace CampusHub.Services
 {
     public class PostgreSqlNotificationService : BackgroundService
     {
-        //private readonly string _connectionString = "Server=localhost;Database=CampusHub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
-        private readonly string _connectionString = "Server=YOUR_DB_HOST;Database=campushub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
+        private readonly string _connectionString;
+
+        public PostgreSqlNotificationService(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("DataContext")!;
+        }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {

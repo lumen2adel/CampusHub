@@ -19,6 +19,14 @@ using campushub.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Fail fast with a clear message when required secrets are missing (see appsettings.Example.json)
+foreach (var key in new[] { "ConnectionStrings:DataContext", "jwt:Secret" })
+{
+    if (string.IsNullOrWhiteSpace(builder.Configuration[key]))
+        throw new InvalidOperationException(
+            $"Missing configuration '{key}'. Set it with 'dotnet user-secrets set \"{key}\" <value>' or the environment variable '{key.Replace(":", "__")}'.");
+}
+
 // Register DbContext
 builder.Services.AddDbContext<DataContext>(options =>
 {
@@ -147,8 +155,8 @@ builder.Services.AddCors(options =>
         //    "https://laith2.me",
         //    "http://laith2.me")
             .AllowAnyMethod()
-            .AllowAnyHeader()
-            //.AllowCredentials(); 
+            .AllowAnyHeader();
+            //.AllowCredentials();
     });
 });
 

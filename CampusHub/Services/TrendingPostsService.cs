@@ -5,12 +5,12 @@ namespace CampusHub.Services
     public class TrendingPostsService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        //private readonly string _connectionString = "Server=localhost;Database=CampusHub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
-        private readonly string _connectionString = "Server=YOUR_DB_HOST;Database=campushub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
+        private readonly string _connectionString;
 
-        public TrendingPostsService(IServiceProvider serviceProvider)
+        public TrendingPostsService(IServiceProvider serviceProvider, IConfiguration configuration)
         {
             _serviceProvider = serviceProvider;
+            _connectionString = configuration.GetConnectionString("DataContext")!;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

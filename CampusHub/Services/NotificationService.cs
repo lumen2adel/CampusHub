@@ -6,13 +6,13 @@ namespace CampusHub.Services
 {
     public class NotificationService : BackgroundService
     {
-        //private readonly string _connectionString = "Server=localhost;Database=CampusHub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
-        private readonly string _connectionString = "Server=YOUR_DB_HOST;Database=campushub;port=5432;User id=postgres;password=YOUR_DB_PASSWORD;";
+        private readonly string _connectionString;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ILogger<NotificationService> _logger;
 
-        public NotificationService(IHubContext<NotificationHub> hubContext, ILogger<NotificationService> logger)
+        public NotificationService(IConfiguration configuration, IHubContext<NotificationHub> hubContext, ILogger<NotificationService> logger)
         {
+            _connectionString = configuration.GetConnectionString("DataContext")!;
             _hubContext = hubContext;
             _logger = logger;
         }
