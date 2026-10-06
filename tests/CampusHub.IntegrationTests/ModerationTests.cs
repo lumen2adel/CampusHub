@@ -5,37 +5,52 @@ using CampusHub.IntegrationTests.Infrastructure;
 namespace CampusHub.IntegrationTests;
 
 /// <summary>
-/// Who may see flagged posts and unflag them?
-/// Endpoints: GET  /api/Group/GetFlaggedPosts/getFlaggedPosts
-///            POST /api/Group/UnflagPost/unflagPost/{postId}
-/// Today ANY signed-in user can do both.
+/// Moderation endpoints are restricted to platform moderators (Admin or SuperAdmin).
+/// Before the CanModerate policy, any signed-in user could list flagged posts and unflag them.
 /// </summary>
 public class ModerationTests(CampusHubApiFactory factory)
 {
     private readonly CancellationToken _ct = TestContext.Current.CancellationToken;
 
-    // Building blocks you can use:
-    //   var user  = await TestUsers.CreateAsync(factory, "Name");                  // normal student
-    //   var admin = await TestUsers.CreateAsync(factory, "Name", UserRole.Admin);  // platform admin
-    //   var seeded = await TestData.CreateGroupWithFlaggedPostAsync(factory, groupAdmin, author);
-    //   await user.Client.PostAsync($"/api/Group/UnflagPost/unflagPost/{seeded.FlaggedPostId}", null, _ct);
-    //   await TestData.IsFlaggedAsync(factory, seeded.FlaggedPostId)
+    private static string UnflagUrl(Guid postId) => $"/api/Group/UnflagPost/unflagPost/{postId}";
+    private const string FlaggedPostsUrl = "/api/Group/GetFlaggedPosts/getFlaggedPosts";
 
-    // TODO(Laith): remove Skip and write this test first. Watch it FAIL against today's code
-    // (that proves the test can detect the hole), then make it pass with your authorization rule.
-    [Fact(Skip = "Laith: write this test")]
+    [Fact]
     public async Task Regular_user_cannot_unflag_a_post()
     {
-        // Arrange: a flagged post, and a signed-in student who is NOT a moderator
-        // Act:     the student calls unflagPost
-        // Assert:  403 Forbidden, and the post is still flagged in the database
-        await Task.CompletedTask;
+        var author = await TestUsers.CreateAsync(factory, "Author");
+        var student = await TestUsers.CreateAsync(factory, "Student");
+        var seeded = await TestData.CreateGroupWithFlaggedPostAsync(factory, groupAdmin: author, author: author);
+
+        var response = await student.Client.PostAsync(UnflagUrl(seeded.FlaggedPostId), null, _ct);
+
+        // 403, not 401: the caller is authenticated, just not allowed
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.True(await TestData.IsFlaggedAsync(factory, seeded.FlaggedPostId), "Post must stay flagged");
     }
 
-    // TODO(Laith): the "allowed" side. Without it, a rule that blocks everyone would also pass.
-    [Fact(Skip = "Laith: write this test")]
-    public async Task Moderator_can_unflag_a_post()
+    [Theory]
+    [InlineData(UserRole.Admin)]
+    [InlineData(UserRole.SuperAdmin)]
+    public async Task Moderator_can_unflag_a_post(UserRole role)
     {
-        await Task.CompletedTask;
+        var author = await TestUsers.CreateAsync(factory, "Author");
+        var moderator = await TestUsers.CreateAsync(factory, "Moderator", role);
+        var seeded = await TestData.CreateGroupWithFlaggedPostAsync(factory, groupAdmin: author, author: author);
+
+        var response = await moderator.Client.PostAsync(UnflagUrl(seeded.FlaggedPostId), null, _ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False(await TestData.IsFlaggedAsync(factory, seeded.FlaggedPostId), "Post must be unflagged");
+    }
+
+    [Fact]
+    public async Task Regular_user_cannot_list_flagged_posts()
+    {
+        var student = await TestUsers.CreateAsync(factory, "Student");
+
+        var response = await student.Client.GetAsync(FlaggedPostsUrl, _ct);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

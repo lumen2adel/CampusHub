@@ -184,7 +184,7 @@ SignalR clients authenticate by passing the JWT as `?access_token=…`, because 
 
 The 2025 submission is preserved in the commit history (March–April 2025). Since then:
 
-- **Security:** removed committed secrets from the entire history and moved configuration to user-secrets and environment variables. Fixed user search exposing other users' **password hashes and live password-reset tokens** (regression test included), a notification service that **broadcast every user's notifications to all clients**, and SignalR connections that were never authenticated.
+- **Security:** removed committed secrets from the entire history and moved configuration to user-secrets and environment variables. Fixed user search exposing other users' **password hashes and live password-reset tokens** (regression test included), a notification service that **broadcast every user's notifications to all clients**, SignalR connections that were never authenticated, and moderation endpoints that any user could call (now restricted by a `CanModerate` policy).
 - **Database:** objects that had been created by hand on the original server (feed views, notification trigger, full-text search columns) are now EF migrations, so a fresh database works. This also fixed post creation failing on a new database.
 - **Platform:** .NET 8 → **.NET 10**. Removed unused dependencies, including AutoMapper, which had a CVE and whose fixed versions are commercially licensed.
 - **Quality:** integration tests with Testcontainers, GitHub Actions CI, and Docker / docker compose.
@@ -193,7 +193,6 @@ The 2025 submission is preserved in the commit history (March–April 2025). Sin
 
 These known issues are planned next:
 
-- Moderation endpoints (`getFlaggedPosts`, `unflagPost`) are open to every signed-in user and need a moderator policy (in progress)
 - `getReportedPosts` reads a table that `reportPost` never writes to. A post is flagged on the 6th report rather than the 5th, and one user can report the same post repeatedly.
 - `login2` skips the CAPTCHA check. Verification codes use `Random` instead of a cryptographic RNG. Login errors reveal whether an e-mail is registered.
 - SignalR hubs accept anonymous connections, and trending and hot feeds include posts from private groups.
