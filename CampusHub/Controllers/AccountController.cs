@@ -23,10 +23,10 @@ namespace CampusHub.Controllers
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly DataContext _dataContext;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly ILogger<AccountController> _logger;
 
-        public AccountController(IHubContext<ChatHub> hubContext, DataContext dataContext, IJwtTokenGenerator jwtTokenGenerator, EmailService emailService, ILogger<AccountController> logger)
+        public AccountController(IHubContext<ChatHub> hubContext, DataContext dataContext, IJwtTokenGenerator jwtTokenGenerator, IEmailService emailService, ILogger<AccountController> logger)
         {
             _dataContext = dataContext;
             _jwtTokenGenerator = jwtTokenGenerator;
@@ -155,7 +155,7 @@ namespace CampusHub.Controllers
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken()
         {
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"; // null e.g. behind Unix sockets; column is NOT NULL
             var userAgent = Request.Headers["User-Agent"].ToString();
             // 🧁 Step 1: Get refresh token from cookie
             var refreshToken = Request.Cookies["refreshToken"];
@@ -211,7 +211,7 @@ namespace CampusHub.Controllers
         [HttpPost("login2")]
         public async Task<IActionResult> Login2([FromBody] Login loginDto)
         {
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"; // null e.g. behind Unix sockets; column is NOT NULL
             var userAgent = Request.Headers["User-Agent"].ToString();
 
             if (string.IsNullOrWhiteSpace(loginDto.Email) || string.IsNullOrWhiteSpace(loginDto.Password))
@@ -265,9 +265,9 @@ namespace CampusHub.Controllers
 
         [EnableRateLimiting("loginPolicy")]
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] Login loginDto , [FromServices] CaptchaValidator captchaValidator)
+        public async Task<IActionResult> Login([FromBody] Login loginDto , [FromServices] ICaptchaValidator captchaValidator)
         {
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"; // null e.g. behind Unix sockets; column is NOT NULL
             var userAgent = Request.Headers["User-Agent"].ToString();
 
             if (string.IsNullOrWhiteSpace(loginDto.CaptchaToken))
