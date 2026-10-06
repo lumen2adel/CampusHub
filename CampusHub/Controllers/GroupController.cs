@@ -18,12 +18,10 @@ namespace CampusHub.Controllers
     public class GroupController : ControllerBase
     {
         private readonly DataContext _dbContext;
-        private readonly TrendingPostsService _trendingPostsService;
         private readonly SearchService _searchService;
 
-        public GroupController(DataContext dbContext, TrendingPostsService trendingPostsService, SearchService searchService)
+        public GroupController(DataContext dbContext, SearchService searchService)
         {
-            _trendingPostsService = trendingPostsService;
             _dbContext = dbContext;
             _searchService = searchService;
         }
@@ -799,7 +797,7 @@ namespace CampusHub.Controllers
         public async Task<IActionResult> GetTrendingPosts()
         {
             var trendingPosts = await _dbContext.Posts
-                .FromSqlRaw("SELECT * FROM trending_posts")
+                .FromSqlRaw("""SELECT * FROM trending_posts ORDER BY "Score" DESC""")
                 .ToListAsync();
 
             return Ok(trendingPosts);
@@ -809,7 +807,7 @@ namespace CampusHub.Controllers
         public async Task<IActionResult> GetHotPosts()
         {
             var hotPosts = await _dbContext.Posts
-                .FromSqlRaw("SELECT * FROM hot_posts")
+                .FromSqlRaw("""SELECT * FROM hot_posts ORDER BY "Score" DESC""")
                 .ToListAsync();
 
             return Ok(hotPosts);

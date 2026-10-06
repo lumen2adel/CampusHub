@@ -55,15 +55,9 @@ builder.Services.AddRateLimiter(options =>
 
 
 
-builder.Services.AddHostedService<TrendingPostsService>();
-builder.Services.AddSingleton<TrendingPostsService>();
-
-
-builder.Services.AddHostedService<PostgreSqlNotificationService>();
-//builder.Services.AddHostedService<TrendingPostsService>();
-builder.Services.AddHostedService<NotificationService>();
-builder.Services.AddScoped<SearchService>();
+// Background work: one service refreshes the feed views, one forwards DB notifications to SignalR
 builder.Services.AddHostedService<FeedRankingService>();
+builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<MentionService>();
 builder.Services.AddHostedService<NotificationListenerService>();
 
@@ -125,6 +119,22 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = builder.Configuration["jwt:Issuer"],
         ValidateAudience = true,
         ValidAudience = builder.Configuration["jwt:Audience"],
+    };
+    // Browsers cannot send an Authorization header on a WebSocket upgrade, so SignalR clients
+    // pass the JWT as ?access_token=...; accept it only for hub endpoints.
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/chathub") || path.StartsWithSegments("/notificationHub")))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
