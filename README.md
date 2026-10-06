@@ -38,11 +38,11 @@ CampusHub was my graduation project at **Al-Mamoun University College** (Baghdad
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
     client["Web / mobile client"]
 
     subgraph api["CampusHub API (ASP.NET Core 10)"]
-        direction TB
+        direction LR
         rest["REST controllers<br/>Account · Chat · Group · UserStatistics"]
         hubs["SignalR hubs<br/>/chathub · /notificationHub"]
         svc["Services<br/>Search · Mention · Email · Captcha"]
